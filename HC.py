@@ -3,44 +3,52 @@ import time
 import sys
 import random
 
+def cost(X, values, weights):
+    total_value = sum(x * v for x, v in zip(X, values))
+    total_weight = sum(x * w for x, w in zip(X, weights))
+    return total_value, total_weight
 
-def evaluate_knapsack(items, knapsack):
-    total_weight = sum(items[i][1] for i in knapsack)
-    total_value = sum(items[i][0] for i in knapsack)
-    return total_weight, total_value
-
-def get_neighbors(knapsack, num_items):
+def generate_all_neighbors(X):
     neighbors = []
-    for i in range(num_items):
-        new_knapsack = knapsack.copy()
-        if i in new_knapsack:
-            new_knapsack.remove(i)
-        else:
-            new_knapsack.add(i)
-        neighbors.append(new_knapsack)
+    for i in range(len(X)):
+        X_new = X[:]
+        X_new[i] = 1 - X_new[i]
+        neighbors.append(X_new)
     return neighbors
 
-def hill_climbing(items, max_weight):
-    current_knapsack = set()
+def hill_climbing(X0, values, weights, W):
+    X_best = X0[:]
+    X = X0[:]
+    current_total_values, current_total_weight = cost(X, values, weights)
+    max_total_values = current_total_values
+
     while True:
-        neighbors = get_neighbors(current_knapsack, len(items))
-        current_weight, current_value = evaluate_knapsack(items, current_knapsack)
-        best_neighbor = None
-        best_value = current_value
-        for neighbor in neighbors:
-            weight, value = evaluate_knapsack(items, neighbor)
-            if weight <= max_weight and value > best_value:
-                best_value = value
-                best_neighbor = neighbor
+        improvement_found = False
+        for neighbor in generate_all_neighbors(X):
+            neighbor_total_values, neighbor_total_weight = cost(neighbor, values, weights)
+            if neighbor_total_weight <= W and neighbor_total_values > current_total_values:
+                X = neighbor[:]
+                current_total_values = neighbor_total_values
+                improvement_found = True
+                if current_total_values > max_total_values:
+                    max_total_values = current_total_values
+                    X_best = X[:]
+        if not improvement_found:
+            break
 
-        if best_neighbor is None or best_value == current_value:
-            break  
-        current_knapsack = best_neighbor
+    return max_total_values, X_best
 
-    # binary output file as desired
-    output_list = [1 if i in current_knapsack else 0 for i in range(len(items))]
+def run_hc(n_runs, X0, values, weights, W):
+    best_solution = None
+    best_value = 0
 
-    return output_list, best_value
+    for _ in range(n_runs):
+        solution_value, solution = hill_climbing(X0, values, weights, W)
+        if solution_value > best_value:
+            best_value = solution_value
+            best_solution = solution
+
+    return best_value, best_solution
 
 
 
@@ -48,20 +56,25 @@ def read_input_file(input_filename):
     with open(input_filename, 'r') as file:
         n, W = map(int, file.readline().split())
         items = [tuple(map(int, line.split())) for line in file.readlines()]
-    return items, W
+        values, weights = zip(*items)
+    return n, W, values, weights
 
  
 def write_output_file(output_filename, output_list):
     with open(output_filename, 'w') as file:
         for item in output_list:
-            file.write(f"{item}\n")    
- 
+            file.write(f"{item}\n")
 
 
 def main(input_filename, output_filename):
-    items, W = read_input_file(input_filename)
-    output_list, _ = hill_climbing(items, W)
+    n, W, values, weights = read_input_file(input_filename)
+    X0 = [random.randint(0, 1) for _ in range(n)]  # initial random solution
+    max_total_values, X_best = run_hc(3, X0, values, weights, W)  
+    print("Best Value:", max_total_values)
+    output_list = [i + 1 for i, included in enumerate(X_best) if included == 1]
     write_output_file(output_filename, output_list)
+
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
@@ -73,4 +86,3 @@ if __name__ == "__main__":
 
 
 
-    
