@@ -1,6 +1,11 @@
 import heapq
 import sys
 from decimal import Decimal, getcontext
+import time
+import os
+import random
+
+
 
 #  Class for each item
 class Item:
@@ -50,7 +55,7 @@ def read_file_bnb(filename):
         
 
         for index in range(numItems):
-            value, weight = map(int, file.readline().split())
+            value, weight = map(float, file.readline().split())
             items.append(Item(value, weight, index))
 
         # Sort items based on their value-to-weight ratio in descending order
@@ -63,13 +68,62 @@ def read_file_bnb(filename):
 
         return items, max_weight
 
+def fptas_knapsack(items, max_weight, epsilon):
+    if epsilon <= 0:
+        raise ValueError("Epsilon must be greater than zero.")
+    
+    # Filter out items with non-positive weights or weights exceeding the capacity before processing
+    valid_items = [item for item in items if item.weight > 0 and item.weight <= max_weight]
+    if not valid_items:
+        return 0, []
+
+    max_value = max(item.value for item in valid_items)
+    n = len(valid_items)
+    K = max_value / (epsilon * n) if n > 0 else 1  # Avoid division by zero
+
+    # Scale down the values of the items and ensure no weight becomes zero after scaling
+    scaled_items = [Item(int(item.value / K), max(1, int(item.weight)), item.index) for item in valid_items]
+
+    # Initialize the dynamic programming table
+    dp = [0] * (max_weight + 1)
+    
+    # Dynamic programming to find the best value with scaled values
+    for item in scaled_items:
+        item_weight = max(1, int(item.weight))  # Ensure weight is at least 1
+        for weight in range(max_weight, item_weight - 1, -1):
+            dp[weight] = max(dp[weight], dp[weight - item_weight] + item.value)
+
+    # Calculate the approximate total value
+    approximate_total_value = int(dp[max_weight] * K)
+    
+    # Reconstruct the solution to find which items are included
+    selected_indices = []
+    weight = max_weight
+    for i in reversed(range(len(scaled_items))):
+        item = scaled_items[i]
+        if weight >= item.weight and dp[weight] == dp[weight - item.weight] + item.value:
+            selected_indices.append(item.index)
+            weight -= item.weight
+
+    selected_indices.reverse()
+    return approximate_total_value, selected_indices
 
 # Using BnB to solve the knapsack problem
-def bnb(filename):
+def bnb(filename, cutoff):
     # Initialization
-    items, capacity  = read_file_bnb(filename)
-    max_val = 0
+    start_time = time.time()
+    items, capacity = read_file_bnb(filename)
+    epsilon = 0.1  # Define epsilon for FPTAS
+    max_val = 0.0
     selected_items = []
+
+    trace = []  # List to keep track of solution improvements over time
+
+    # Determine the best initial value and corresponding items
+    max_val, selected_items = fptas_knapsack(items, capacity, epsilon)
+    trace.append((0, max_val))  # Log initial best value found
+
+    # Initial root node for BnB
     pq = []
 
     # a dummy root
@@ -77,6 +131,10 @@ def bnb(filename):
     heapq.heappush(pq, (-root.lb, root))  # Push root
 
     while pq:
+        current_time = time.time()
+        elapsed_time = current_time - start_time
+        if elapsed_time > cutoff:  # Check if the cutoff time has been exceeded
+            break
         # # Debug: Print the queue state
         # print_queue(pq)
 
@@ -89,14 +147,19 @@ def bnb(filename):
             if current.weight <= capacity and current.value > max_val:
                 max_val = current.value
                 selected_items = current.items_included[:] # pass the shallow copy
+                trace.append((elapsed_time, max_val))  # Log this improvement
+                # print("Trace update at {:.2f}s with value {}".format(elapsed_time, max_val))
+
             continue  # Go to the next item in the priority queue after updating max_value if necessary
         
         # Check if this full-capacity node's solution is better and the capacity is fully utilized
         if current.weight == capacity and current.value > max_val:
             max_val = current.value
             selected_items = current.items_included[:] # pass the shallow copy
-            
-        # # Debug: print the current max_val after each node
+            trace.append((elapsed_time, max_val))  # Log this improvement
+            # print("Trace update at {:.2f}s with value {}".format(elapsed_time, max_val))
+
+        # Debug: print the current max_val after each node
         # print("Current max value: {}, Current items: {}".format(max_val, selected_items))
         # print("Node chosen now: value: {}, weight: {}, lb: {}".format(current.value, current.weight, current.lb))
 
@@ -122,7 +185,8 @@ def bnb(filename):
             # print("Excluding item {}".format(items[nex_item_idx].index))
 
         # print("\n")
-    return max_val, selected_items, len(items)
+    elapsed_time = time.time() - start_time
+    return max_val, selected_items, trace, elapsed_time
 
 # def print_queue(pq):
 #     print("Current queue:")
@@ -137,21 +201,44 @@ def indices_to_binary(selected_indices, total_items):
     return binary_list
 
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: python script.py <filename> <max time in seconds>")
+    if len(sys.argv) != 5:
+        print("Usage: exec <filename> [BnB|Approx|LS1|LS2] <cutoff in seconds> <random seed>")
         return 1
 
     filename = sys.argv[1]
+    method = sys.argv[2]
+    cutoff = int(sys.argv[3])
+    seed = int(sys.argv[4])
+    random.seed(seed)  # Set the random seed for reproducibility
 
-    max_value, selected_indices, length = bnb(filename)
+    if method == "BnB":
+        start_time = time.time()
+        max_value, selected_indices, trace, elapsed_time = bnb(filename, cutoff)  # Assuming bnb is defined and imported
+        
+        # Output filenames derived from the input filename (without directory path)
+        output_base = os.path.splitext(os.path.basename(filename))[0]
+        sol_filename = "{}_{}_{}.sol".format(output_base, method, cutoff)
+        trace_filename = "{}_{}_{}.trace".format(output_base, method, cutoff)
+        
+        # Write to solution file
+        with open(sol_filename, 'w') as sol_file:
+            sol_file.write("{}\n".format(max_value))
+            sol_file.write(",".join(map(str, selected_indices)) + "\n")
 
-    binary_result = indices_to_binary(selected_indices, length)
+        # Write to trace file
+        with open(trace_filename, 'w') as trace_file:
+            for t, val in trace:
+                trace_file.write("{:.2f}, {}\n".format(t, val))
 
-    print("Maximum value:", max_value)
-    # print(selected_indices)
-    print(" ".join(map(str, binary_result)))
+        # Calculate total time taken
+        total_time = time.time() - start_time
+        # print("Method: {method} | File: {filename} | Max Value: {max_value} | Time Spent: {total_time:.2f}s".format(
+        #     method=method, filename=output_base, max_value=max_value, total_time=total_time))
+        # print("Results written to {sol_filename} and {trace_filename}".format(
+        #     sol_filename=sol_filename, trace_filename=trace_filename))
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())
