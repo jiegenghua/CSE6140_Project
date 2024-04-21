@@ -2,130 +2,95 @@ import sys
 import random
 import time
 import numpy as np
-
-def cost(X, value, weight):
-    totalValue = np.dot(np.array(X), np.array(value))
-    totalWeight = np.dot(np.array(X), np.array(weight))
-    return totalValue, totalWeight
-
-def generateNeighbors(X):
-    newX = list(X)
-    chosenID = random.choice(range(len(X)))
-    newX[chosenID] = 1 - newX[chosenID]
-    return newX
-
-'''
-def generateManyNeighbors(X):    
-'''
-'''
-    Returns a list of of all neighbours in the Neighbourhood of packing            
-    Parameters: X(numpy array): numpy array of 1/0 to indicate a specified packing            
-    Returns: neighbourhood (list): a list of of all neighbours in the Neighbourhood of packing                    
-    The size of the 1-flip neighborhood = 100'''
-'''
-    neighbourhood = []
-    for i in range(0, 100):
-        temp = list(X)
-        neighbourhood.append(temp)
-        if neighbourhood[i][i] == 1:
-            neighbourhood[i][i] = 0
+import os
+class HC():
+    def __init__(self, inputFile, cutoff, randSeed):
+        file = open(inputFile, 'r')
+        Lines = file.readlines()
+        Lines = [list(map(float, line.split())) for line in Lines]
+        n = int(Lines[0][0])
+        W = Lines[0][1]
+        temp = inputFile.split('\\')
+        outputFileSol = '.\\' + 'output\\' + temp[-1] + "\\" + temp[-1] + '_' + 'HC' + '_' + str(cutoff) + '_' + str(
+            randSeed) + '.sol'
+        temp = inputFile.split('\\')
+        outputFileTrace = '.\\' + 'output\\' + temp[-1] + "\\" + temp[-1] + '_' + 'HC' + '_' + str(cutoff) + '_' + str(
+            randSeed) + '.trace'
+        os.makedirs(os.path.dirname(outputFileSol), exist_ok=True)
+        os.makedirs(os.path.dirname(outputFileTrace), exist_ok=True)
+        if 'large' in temp[-1]:
+            values, weights = np.split(np.array(Lines[1:-1]), 2, axis=1)
         else:
-            neighbourhood[i][i] = 1
-            
-    return neighbourhood
-'''
+            values, weights = np.split(np.array(Lines[1:]), 2, axis=1)
+        values = values.flatten()
+        weights = weights.flatten()
+        self.value = values
+        self.weight = weights
+        self.seed = randSeed
+        self.cutoff = cutoff
+        self.W = W
+        self.n = n
+        self.outputFileSol = outputFileSol
+        self.outputFileTrace = outputFileTrace
 
+    def cost(self, X):
+        totalValue = np.dot(np.array(X), np.array(self.value))
+        totalWeight = np.dot(np.array(X), np.array(self.weight))
+        return totalValue, totalWeight
 
+    def generateNeighbors(self, X):
+        newX = list(X)
+        chosenID = random.choice(range(len(X)))
+        newX[chosenID] = 1 - newX[chosenID]
+        return newX
 
-def hill_climbing(X0, values, weights, W, maxiter, run_id, output_filename):
-    start = time.time()
-    X = X0[:]
-    bestX = X[:]
-    bestValue, bestWeight = cost(X, values, weights)
-    trace_data = []
-    trace_time0 = time.time() - start
-    trace_data.append((trace_time0, bestValue))
+    def hill_climbing(self, X0, maxiter):
+        start = time.time()
+        X = X0[:]
+        bestX = X[:]
+        bestValue, bestWeight = self.cost(X)
+        trace_data = []
+        trace_time0 = time.time() - start
+        trace_data.append((trace_time0, bestValue))
 
-    for _ in range(maxiter):
-        newX = generateNeighbors(X)
-        newValue, newWeight = cost(newX, values, weights)
+        for _ in range(maxiter):
+            newX = self.generateNeighbors(X)
+            newValue, newWeight = self.cost(newX)
 
-        if newWeight <= W and newValue > bestValue:
-            X = newX[:]
-            bestX = newX[:]
-            bestValue = newValue
-            trace_time = time.time() - start
-            trace_data.append((trace_time, bestValue))
+            if newWeight <= self.W and newValue > bestValue:
+                X = newX[:]
+                bestX = newX[:]
+                bestValue = newValue
+                trace_time = time.time() - start
+                trace_data.append((trace_time, bestValue))
 
-    trace_filename = f"{output_filename}_{run_id}.trace"
-    write_trace_file(trace_data, trace_filename)
-    return bestX, (bestValue, bestWeight)
+        self.write_trace_file(trace_data, self.outputFileTrace)
+        return bestX, (bestValue, bestWeight)
 
+    def write_trace_file(self, trace_data, trace_filename):
+        with open(trace_filename, 'w+') as f2:
+            for time_stamp, value in trace_data:
+                f2.write(str(time_stamp) + ',' + str(int(value)) + '\n')
 
-def read_input_file(inputFile):
-    with open(inputFile, 'r') as file:
-        lines = file.readlines()
-    first_line = lines[0].split()
-    n = int(first_line[0])  # number of items
-    W = float(first_line[1])  # target weight
-    
-    
-    item_data = np.array([list(map(float, line.split())) for line in lines[1:-1]])
-    values, weights = item_data[:, 0], item_data[:, 1]
-    
-    OPT = np.array(list(map(int, lines[-1].split())))
-    total_value_OPT = np.sum(values * OPT)
-    return n, W, values, weights, total_value_OPT
-
-
-def write_trace_file(trace_data, trace_filename):
-    with open(trace_filename, 'w+') as f2:
-        for time_stamp, value in trace_data:
-            f2.write(str(time_stamp) + ',' + str(int(value)) + '\n')
-
-def main(inputFile, outputFileSol, iters=6666, cutoff=20, randSeed=42):
-    start = time.time()
-    n, W, values, weights, total_value_OPT = read_input_file(inputFile)
-    random.seed(randSeed)
-    
-    results = []
-    for run_id in range(20):
-        X0 = np.random.binomial(1, 0.1, n)  # random start
-        
+    def run_HC(self):
+        iters = 6666
+        start = time.time()
+        random.seed(self.seed)
+        results = []
+        X0 = np.random.binomial(1, 0.1, self.n)
         # check the initial state exceeds the W
-        while np.dot(X0, weights) > W:
-            X0 = np.random.binomial(1, 0.1, n)
-
-        bestX, bestValueWeight = hill_climbing(X0, values, weights, W, iters, run_id, outputFileSol)
-        # Append result only if it is less than or equal to the optimal value
-        # if bestValueWeight[0] <= total_value_OPT:
-            # results.append(bestValueWeight[0])
+        while np.dot(X0, self.weight) > self.W:
+            X0 = np.random.binomial(1, 0.1, self.n)
+        bestX, bestValueWeight = self.hill_climbing(X0, iters)
         results.append(bestValueWeight[0])
-       
-    best_result = max(results)
-    best_index = results.index(best_result)
-    best_solution = bestX  # store the best solution found
-    mean_val = np.mean(results)
-    error = (total_value_OPT - mean_val) / total_value_OPT
+        self.write_output_file(bestX, max(results))
 
-    print("OPT:", total_value_OPT)
-    print("Total value: min, max, mean:", min(results), max(results), mean_val)
-    print("Time taken:", (time.time() - start) / len(results))
-    print("Error:", error)
+    def write_output_file(self, bestX, bestValue):
+        with open(self.outputFileSol, 'w+') as f:
+            f.write(f"{int(bestValue)}\n")  # the best value as an integer
+            indices = [str(index) for index, value in enumerate(bestX) if value == 1]
+            f.write(",".join(indices) + "\n")  # the indices of selected items
 
-    outputFileSol = outputFileSol if outputFileSol.endswith(".sol") else outputFileSol + ".sol"
-    write_output_file(best_solution, best_result, outputFileSol)
-
-def write_output_file(bestX, bestValue, outputFileSol):
-    with open(outputFileSol, 'w+') as f:
-        f.write(f"{int(bestValue)}\n")  # the best value as an integer
-        indices = [str(index) for index, value in enumerate(bestX) if value == 1]
-        f.write(",".join(indices) + "\n")  # the indices of selected items
-
-if __name__ == "__main__":
-    input_filename = './DATASET/large_scale/large_3'
-    output_filename = './Output/large_3/large_3'
-    main(input_filename, output_filename)
 
 
 
