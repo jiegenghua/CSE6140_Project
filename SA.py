@@ -2,7 +2,7 @@ import sys
 import os
 import random
 import time
-
+from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -13,25 +13,24 @@ class SA():
         Lines = [list(map(float, line.split())) for line in Lines]
         n = int(Lines[0][0])
         W = Lines[0][1]
-        temp = inputFile.split('\\')
-        outputFileSol = '.\\'+'output\\' + temp[-1] + "\\" + temp[-1] + '_' + 'SA' + '_' + str(cutoff) + '_' + str(
-            randSeed) + '.sol'
-        temp = inputFile.split('\\')
-        outputFileTrace = '.\\'+'output\\' + temp[-1] + "\\" + temp[-1] + '_' + 'SA' + '_' + str(cutoff) + '_' + str(
-            randSeed) + '.trace'
-        os.makedirs(os.path.dirname(outputFileSol), exist_ok=True)
-        os.makedirs(os.path.dirname(outputFileTrace), exist_ok=True)
+        self.method = "SA"
+        self.outputDir = os.path.join(Path(__file__).resolve().parent,'output')
+        Path(self.outputDir).mkdir(parents=True, exist_ok=True)
         values, weights = np.split(np.array(Lines[1:]), 2, axis=1)
         values = values.flatten()
         weights = weights.flatten()
+        self.method = "SA"
         self.value = values
         self.weight = weights
         self.seed = randSeed
         self.cutoff = cutoff
         self.W = W
         self.n = n
-        self.outputFileSol = outputFileSol
-        self.outputFileTrace = outputFileTrace
+        output_base = os.path.splitext(os.path.basename(inputFile))[0]
+        sol_filename = "{}_{}_{}_{}.sol".format(output_base, self.method, self.cutoff, self.seed)
+        self.outputFileSol = os.path.join(self.outputDir, sol_filename)
+        trace_filename = "{}_{}_{}_{}.trace".format(output_base, self.method, self.cutoff, self.seed)
+        self.outputFileTrace = os.path.join(self.outputDir, trace_filename)
 
     def cost(self, X):
         totalValue = np.dot(np.array(X), np.array(self.value))
@@ -80,7 +79,7 @@ class SA():
                     bestCost = currCost
                     avgCostList.append(bestCost)
                     tt = time.time()-start
-                    f2.write(str(tt)+','+str(bestCost)+'\n')
+                    f2.write(str(tt)+','+str(int(bestCost))+'\n')
                 i += 1
                 cal += 1
             T *= dR
@@ -91,7 +90,7 @@ class SA():
         random.seed(self.seed)
         dR = 0.95
         T = 1000   # temperature
-        iters = 200   # iteration number for each temperature
+        iters = 50   # iteration number for each temperature
         start = time.time()
         alpha = 0.1  # decay rate for generating random initial state
         X0 = np.random.binomial(1, alpha, self.n)
@@ -102,6 +101,7 @@ class SA():
 
         time_all = time.time()-start
         indices = [str(index) for index, value in enumerate(sol[0]) if value == 1]
+
         f = open(self.outputFileSol, 'w+')
         f.write(str(int(sol[1]))+'\n')
         f.write(",".join(indices) + "\n")

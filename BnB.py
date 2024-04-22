@@ -207,6 +207,9 @@ class BnB():
         start_time = time.time()
         # Note that you should call the bnb method, not the standalone bnb function
         max_value, selected_indices, trace, elapsed_time = self.bnb()
+        self.writeFile(max_value, selected_indices, trace)
+
+    def writeFile(self, max_value, selected_indices, trace):
         output_base = os.path.splitext(os.path.basename(self.filename))[0]
         sol_filename = "{}_{}_{}.sol".format(output_base, self.method, self.cutoff)
         sol_filename = os.path.join(self.outputDir, sol_filename)

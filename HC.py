@@ -3,6 +3,7 @@ import random
 import time
 import numpy as np
 import os
+from pathlib import Path
 class HC():
     def __init__(self, inputFile, cutoff, randSeed):
         file = open(inputFile, 'r')
@@ -10,13 +11,9 @@ class HC():
         Lines = [list(map(float, line.split())) for line in Lines]
         n = int(Lines[0][0])
         W = Lines[0][1]
-        temp = inputFile.split('\\')
-        outputFileSol = '.\\' + 'output\\' + temp[-1] + "\\" + temp[-1] + '_' + 'HC' + '_' + str(cutoff) + '_' + str(
-            randSeed) + '.sol'
-        outputFileTrace = '.\\' + 'output\\' + temp[-1] + "\\" + temp[-1] + '_' + 'HC' + '_' + str(cutoff) + '_' + str(
-            randSeed) + '.trace'
-        os.makedirs(os.path.dirname(outputFileSol), exist_ok=True)
-        os.makedirs(os.path.dirname(outputFileTrace), exist_ok=True)
+        self.method = "HC"
+        self.outputDir = os.path.join(Path(__file__).resolve().parent,'output')
+        Path(self.outputDir).mkdir(parents=True, exist_ok=True)
         values, weights = np.split(np.array(Lines[1:]), 2, axis=1)
         values = values.flatten()
         weights = weights.flatten()
@@ -26,8 +23,11 @@ class HC():
         self.cutoff = cutoff
         self.W = W
         self.n = n
-        self.outputFileSol = outputFileSol
-        self.outputFileTrace = outputFileTrace
+        output_base = os.path.splitext(os.path.basename(inputFile))[0]
+        sol_filename = "{}_{}_{}_{}.sol".format(output_base, self.method, self.cutoff, self.seed)
+        self.outputFileSol = os.path.join(self.outputDir, sol_filename)
+        trace_filename = "{}_{}_{}_{}.trace".format(output_base, self.method, self.cutoff, self.seed)
+        self.outputFileTrace = os.path.join(self.outputDir, trace_filename)
 
     def cost(self, X):
         totalValue = np.dot(np.array(X), np.array(self.value))
