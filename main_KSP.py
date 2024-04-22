@@ -6,7 +6,7 @@ from BnB import BnB
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-
+from pathlib import Path
 def QRTD_SQD(solFile, traceFileFolder):
     file2 = open(solFile, 'r')
     Lines2 = file2.readlines()
@@ -15,7 +15,7 @@ def QRTD_SQD(solFile, traceFileFolder):
     data = []
     for files in os.listdir(dirname):
         if files.endswith('trace'):
-            f = open(dirname+'\\'+files)
+            f = open(os.path.join(dirname, files))
             Lines = f.readlines()
             Lines = [list(map(float, line.split(','))) for line in Lines]
             data.append(Lines)
@@ -78,8 +78,9 @@ def main():
     cutoff = int(args.time)
     seed = args.seed
     LS_plot = False  # whether plot the QRTD and SQD plot for large scale 1 and large scale 3
-    temp = inputFile.split('\\')
-    solFile = ".\\DATA\\DATASET\\large_scale_solution\\" + temp[-1]
+    root_dir = Path(inputFile).resolve().parent.parent
+    solFile = os.path.join(root_dir, os.path.split(Path(inputFile).resolve().parent)[1]+'_solution')
+    traceDir = ''     # the directory where you stored your trace files with at least 20 runs
     if alg == 'BnB':
         agent = BnB(inputFile, cutoff)
         agent.runBnB()
@@ -90,14 +91,11 @@ def main():
         agent = HC(inputFile, cutoff, seed)
         agent.run_HC()
         if LS_plot==True:
-            traceDir = ".\\DATA\\DATASET\\HC\\"+temp[-1]
-            os.makedirs(os.path.dirname(traceDir), exist_ok=True)
             QRTD_SQD(solFile, traceDir)
     elif alg == 'SA':
         agent = SA(inputFile, cutoff, seed)
         agent.runSA()
         if LS_plot==True:
-            traceDir = ".\\DATA\\DATASET\\SA\\"+temp[-1]
             os.makedirs(os.path.dirname(traceDir), exist_ok=True)
             QRTD_SQD(solFile, traceDir)
     else:
