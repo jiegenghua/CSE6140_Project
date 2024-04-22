@@ -201,16 +201,16 @@ class BnB():
         output_base = os.path.splitext(os.path.basename(self.filename))[0]
         sol_filename = "{}_{}_{}.sol".format(output_base, self.method, self.cutoff)
         trace_filename = "{}_{}_{}.trace".format(output_base, self.method, self.cutoff)
+
         # Write to solution file
         with open(sol_filename, 'w') as sol_file:
-            sol_file.write("{}\n".format(max_value))
+            sol_file.write("{}\n".format(int(max_value)))  # Convert max_value to int
             sol_file.write(",".join(map(str, selected_indices)) + "\n")
 
         # Write to trace file
         with open(trace_filename, 'w') as trace_file:
             for t, val in trace:
-                trace_file.write("{:.2f}, {}\n".format(t, val))
-
+                trace_file.write("{:.2f}, {}\n".format(t, int(val)))  # Convert trace values to int
         
         # # Calculate total time taken
         # total_time = time.time() - start_time
