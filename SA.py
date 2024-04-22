@@ -101,7 +101,7 @@ class SA():
         time_all = time.time()-start
         indices = [str(index) for index, value in enumerate(sol[0]) if value == 1]
         f = open(self.outputFileSol, 'w+')
-        f.write(str(sol[1])+'\n')
+        f.write(str(int(sol[1]))+'\n')
         f.write(",".join(indices) + "\n")
         f.close()
         print("Elapsed time:", time_all)
