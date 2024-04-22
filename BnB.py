@@ -19,11 +19,16 @@ class Item:
 # Class for node in the tree for subproblem, recording total value, weight, and included items
 class Node:
     def __init__(self, item_index_sorted, value, weight, lb, items_included):
-        self.item_index_sorted = item_index_sorted # this is the item idex to be considered for that node, also the level of tree
+        self.item_index_sorted = item_index_sorted
         self.value = value
         self.weight = weight
         self.lb = lb
         self.items_included = items_included
+
+    # Define a less-than method for comparing two nodes
+    def __lt__(self, other):
+        # Reverse the logic if you push with negative lb to maintain a max-heap property
+        return self.lb < other.lb
 
 
 # Calculate the lb of the total value from the node.
