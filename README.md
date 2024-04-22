@@ -31,7 +31,7 @@ main_KSP.py: the main function
 ## To run the code:
 Input
 ```angular2html
-Python main_KSP.py -inst filename -alg "[BnB|FPTAS|HC|SA]" -time "cutoff time" -seed 1
+python main_KSP.py -inst filename -alg "[BnB|FPTAS|HC|SA]" -time "cutoff time" -seed 1
 ```
 For example, you can run the small-1 instance by the following command in windows:
 ```angular2html
