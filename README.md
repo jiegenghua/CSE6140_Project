@@ -9,7 +9,7 @@ The output 0/1 represents whether one item is chosen.\
 ![](image_2.png)
 
 We saved the output with two files: one is the trace file which includes the time and the quality of the result when the 
-performance improved; the solution file which includes two lines (the optimal quality, the index of the chosen items).\
+performance improved; the solution file which includes two lines (the optimal quality, the index of the chosen items).
 
 
 ## Algorithms
