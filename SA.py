@@ -90,12 +90,14 @@ class SA():
     def runSA(self):
         random.seed(self.seed)
         dR = 0.95
-        T = 1000
-        iters = 50
+        T = 1000   # temperature
+        iters = 200   # iteration number for each temperature
         start = time.time()
-        X0 = np.random.binomial(1, 0.1, self.n)
+        alpha = 0.1  # decay rate for generating random initial state
+        X0 = np.random.binomial(1, alpha, self.n)
         while self.cost(X0)[1] > self.W:
-            X0 = np.random.binomial(1, 0.1, self.n)
+            alpha = alpha*0.1
+            X0 = np.random.binomial(1, alpha, self.n)
         sol = self.SA(iters, X0, T, dR)
 
         time_all = time.time()-start
