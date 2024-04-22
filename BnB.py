@@ -120,6 +120,7 @@ class BnB():
         self.items, self.capacity = read_file_bnb(inputFile)
         self.method = "BnB"
         self.outputDir = os.path.join(Path(__file__).resolve().parent,'output')
+        Path(self.outputDir).mkdir(parents=True, exist_ok=True)
 
     # Using BnB to solve the knapsack problem
     def bnb(self):
@@ -211,7 +212,6 @@ class BnB():
         sol_filename = os.path.join(self.outputDir, sol_filename)
         trace_filename = "{}_{}_{}.trace".format(output_base, self.method, self.cutoff)
         trace_filename = os.path.join(self.outputDir, trace_filename)
-        print("hahahah", trace_filename)
         # Write to solution file
         with open(sol_filename, 'w+') as sol_file:
             sol_file.write("{}\n".format(int(max_value)))  # Convert max_value to int
