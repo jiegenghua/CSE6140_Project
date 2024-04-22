@@ -1,7 +1,7 @@
 ## Introduction
 This repo holds four algorithm to solve knapsack problem. \
 A typical knapsack problem is to solve the following constrained integer programming problem: \
-![](img_1.png)
+![](image_1.png)
 
 The DATASET includes 10 small scale instances and 21 large scale instances provided by Professor.\
 You can use your own dataset and save it with the following format where the first row is the number of items and the maximum capacity of the knapsack.
