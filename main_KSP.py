@@ -64,6 +64,11 @@ def QRTD_SQD(solFile, traceFileFolder):
     plt.title('SQD')
     plt.grid()
     plt.show()
+def boxPlot(TimeFile):
+    file = open(TimeFile, 'r')
+    Lines= file.readlines()
+    time_all = [list(map(float, line.split())) for line in Lines]
+    plt.boxplot(time_all)
 
 def main():
     parser = ArgumentParser()
@@ -81,6 +86,7 @@ def main():
     root_dir = Path(inputFile).resolve().parent.parent
     solFile = os.path.join(root_dir, os.path.split(Path(inputFile).resolve().parent)[1]+'_solution')
     traceDir = ''     # the directory where you stored your trace files with at least 20 runs
+    timeFile = ''     # the file which log the time of each run of hill climbing and simulated annealing
     if alg == 'BnB':
         agent = BnB(inputFile, cutoff)
         agent.runBnB()
@@ -92,12 +98,14 @@ def main():
         agent.run_HC()
         if LS_plot==True:
             QRTD_SQD(solFile, traceDir)
+            boxPlot(timeFile)
     elif alg == 'SA':
         agent = SA(inputFile, cutoff, seed)
         agent.runSA()
         if LS_plot==True:
             os.makedirs(os.path.dirname(traceDir), exist_ok=True)
             QRTD_SQD(solFile, traceDir)
+            boxPlot(timeFile)
     else:
         print("Please input a legal algorithm: [BnB|FPTAS|HC|SA]")
 
