@@ -215,7 +215,7 @@ class BnB():
         # Write to trace file
         with open(trace_filename, 'w') as trace_file:
             for t, val in trace:
-                trace_file.write("{:.2f}, {}\n".format(t, int(val)))  # Convert trace values to int
+                trace_file.write("{:.2f},{}\n".format(t, int(val)))  # Convert trace values to int
         
         # # Calculate total time taken
         # total_time = time.time() - start_time
