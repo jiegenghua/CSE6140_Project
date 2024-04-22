@@ -19,4 +19,4 @@ results of using the Simulated annealing and Hill climbing algorithm,
 change the flag ```LS_plot``` in the ```main_KSP.py```to be true.
 Make sure the trace files for 20 or more runs are stored in a folder.
 
-A detailed report can be folder in the same folder, named as ```report.pdf```.
+A detailed report can be found in the same folder, named as ```report.pdf```.
