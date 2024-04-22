@@ -4,7 +4,7 @@ from decimal import Decimal, getcontext
 import time
 import os
 import random
-
+from pathlib import Path
 
 #  Class for each item
 class Item:
@@ -118,13 +118,8 @@ class BnB():
         self.filename = inputFile
         self.cutoff = cutoff
         self.items, self.capacity = read_file_bnb(inputFile)
-        temp = inputFile.split('\\')
-        outputFileSol = '.\\' + 'output\\' + temp[-1] + "\\" + temp[-1] + '_' + 'BnB' + '_' + str(cutoff) + '.sol'
-        outputFileTrace = '.\\' + 'output\\' + temp[-1] + "\\" + temp[-1] + '_' + 'BnB' + '_' + str(cutoff) +'.trace'
-        os.makedirs(os.path.dirname(outputFileSol), exist_ok=True)
-        os.makedirs(os.path.dirname(outputFileTrace), exist_ok=True)
-        self.outputFileSol = outputFileSol
-        self.outputFileTrace = outputFileTrace
+        self.method = "BnB"
+        self.outputDir = os.path.join(Path(__file__).resolve().parent,'output')
 
     # Using BnB to solve the knapsack problem
     def bnb(self):
@@ -212,15 +207,17 @@ class BnB():
         # Note that you should call the bnb method, not the standalone bnb function
         max_value, selected_indices, trace, elapsed_time = self.bnb()
         output_base = os.path.splitext(os.path.basename(self.filename))[0]
-        sol_filename = self.outputFileSol
-        trace_filename = self.outputFileTrace
-
+        sol_filename = "{}_{}_{}.sol".format(output_base, self.method, self.cutoff)
+        sol_filename = os.path.join(self.outputDir, sol_filename)
+        trace_filename = "{}_{}_{}.trace".format(output_base, self.method, self.cutoff)
+        trace_filename = os.path.join(self.outputDir, trace_filename)
+        print("hahahah", trace_filename)
         # Write to solution file
-        with open(sol_filename, 'w') as sol_file:
+        with open(sol_filename, 'w+') as sol_file:
             sol_file.write("{}\n".format(int(max_value)))  # Convert max_value to int
             sol_file.write(",".join(map(str, selected_indices)) + "\n")
 
         # Write to trace file
-        with open(trace_filename, 'w') as trace_file:
+        with open(trace_filename, 'w+') as trace_file:
             for t, val in trace:
                 trace_file.write("{:.2f},{}\n".format(t, int(val)))  # Convert trace values to int
