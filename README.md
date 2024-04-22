@@ -1,14 +1,15 @@
 ## Introduction
 This repo holds four algorithm to solve knapsack problem. \
 A typical knapsack problem is to solve the following constrained integer programming problem: \
-![img_1.png](img_1.png)
+![](img_1.png)
 
 The DATASET includes 10 small scale instances and 21 large scale instances provided by Professor.\
 You can use your own dataset and save it with the following format where the first row is the number of items and the maximum capacity of the knapsack.
 The output 0/1 represents whether one item is chosen.\
+![](image_2.png)
+
 We saved the output with two files: one is the trace file which includes the time and the quality of the result when the 
 performance improved; the solution file which includes two lines (the optimal quality, the index of the chosen items).\
-![img_2.png](img.png)
 
 
 ## Algorithms
