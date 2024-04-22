@@ -13,15 +13,11 @@ class HC():
         temp = inputFile.split('\\')
         outputFileSol = '.\\' + 'output\\' + temp[-1] + "\\" + temp[-1] + '_' + 'HC' + '_' + str(cutoff) + '_' + str(
             randSeed) + '.sol'
-        temp = inputFile.split('\\')
         outputFileTrace = '.\\' + 'output\\' + temp[-1] + "\\" + temp[-1] + '_' + 'HC' + '_' + str(cutoff) + '_' + str(
             randSeed) + '.trace'
         os.makedirs(os.path.dirname(outputFileSol), exist_ok=True)
         os.makedirs(os.path.dirname(outputFileTrace), exist_ok=True)
-        if 'large' in temp[-1]:
-            values, weights = np.split(np.array(Lines[1:-1]), 2, axis=1)
-        else:
-            values, weights = np.split(np.array(Lines[1:]), 2, axis=1)
+        values, weights = np.split(np.array(Lines[1:]), 2, axis=1)
         values = values.flatten()
         weights = weights.flatten()
         self.value = values

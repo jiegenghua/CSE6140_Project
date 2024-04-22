@@ -22,10 +22,7 @@ class FPTAS():
         outputFileTrace = '.\\' + 'output\\' + temp[-1] + "\\" + temp[-1] + '_' + 'FPTAS' + '_' + str(cutoff) + '.trace'
         os.makedirs(os.path.dirname(outputFileSol), exist_ok=True)
         os.makedirs(os.path.dirname(outputFileTrace), exist_ok=True)
-        if 'large' in temp[-1]:
-            values, weights = np.split(np.array(Lines[1:-1]), 2, axis=1)
-        else:
-            values, weights = np.split(np.array(Lines[1:]), 2, axis=1)
+        values, weights = np.split(np.array(Lines[1:]), 2, axis=1)
         values = values.flatten()
         weights = weights.flatten()
         self.value = values
@@ -88,7 +85,7 @@ class FPTAS():
         self.write_output_file(X, OPT)
 
     def write_output_file(self, bestX, bestValue):
-        print(bestX)
+        indices = [str(index) for index in bestX]
         with open(self.outputFileSol, 'w+') as f:
             f.write(f"{int(bestValue)}\n")
-            f.write(str(bestX))
+            f.write(",".join(indices) + "\n")

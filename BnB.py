@@ -6,7 +6,6 @@ import os
 import random
 
 
-
 #  Class for each item
 class Item:
     def __init__(self, value, weight, index):
@@ -57,7 +56,6 @@ def read_file_bnb(filename):
     with open(filename, 'r') as file:
         numItems, max_weight = map(int, file.readline().split())
         items = []
-        
 
         for index in range(numItems):
             value, weight = map(float, file.readline().split())
@@ -73,10 +71,11 @@ def read_file_bnb(filename):
 
         return items, max_weight
 
+
 def fptas_knapsack(items, max_weight, epsilon):
     if epsilon <= 0:
         raise ValueError("Epsilon must be greater than zero.")
-    
+
     # Filter out items with non-positive weights or weights exceeding the capacity before processing
     valid_items = [item for item in items if item.weight > 0 and item.weight <= max_weight]
     if not valid_items:
@@ -91,7 +90,7 @@ def fptas_knapsack(items, max_weight, epsilon):
 
     # Initialize the dynamic programming table
     dp = [0] * (max_weight + 1)
-    
+
     # Dynamic programming to find the best value with scaled values
     for item in scaled_items:
         item_weight = max(1, int(item.weight))  # Ensure weight is at least 1
@@ -100,7 +99,7 @@ def fptas_knapsack(items, max_weight, epsilon):
 
     # Calculate the approximate total value
     approximate_total_value = int(dp[max_weight] * K)
-    
+
     # Reconstruct the solution to find which items are included
     selected_indices = []
     weight = max_weight
@@ -113,12 +112,19 @@ def fptas_knapsack(items, max_weight, epsilon):
     selected_indices.reverse()
     return approximate_total_value, selected_indices
 
+
 class BnB():
     def __init__(self, inputFile, cutoff):
         self.filename = inputFile
         self.cutoff = cutoff
         self.items, self.capacity = read_file_bnb(inputFile)
-        self.method = 'BnB'
+        temp = inputFile.split('\\')
+        outputFileSol = '.\\' + 'output\\' + temp[-1] + "\\" + temp[-1] + '_' + 'BnB' + '_' + str(cutoff) + '.sol'
+        outputFileTrace = '.\\' + 'output\\' + temp[-1] + "\\" + temp[-1] + '_' + 'BnB' + '_' + str(cutoff) +'.trace'
+        os.makedirs(os.path.dirname(outputFileSol), exist_ok=True)
+        os.makedirs(os.path.dirname(outputFileTrace), exist_ok=True)
+        self.outputFileSol = outputFileSol
+        self.outputFileTrace = outputFileTrace
 
     # Using BnB to solve the knapsack problem
     def bnb(self):
@@ -149,24 +155,24 @@ class BnB():
             # # Debug: Print the queue state
             # print_queue(pq)
 
-            # Check the upper bound from the max values of solutions found 
+            # Check the upper bound from the max values of solutions found
             _, current = heapq.heappop(pq)
-            
+
             # Check if current node is a leaf node
             if current.item_index_sorted == len(self.items) - 1:
                 # Check if this leaf node's solution is better and within the capacity
                 if current.weight <= self.capacity and current.value > max_val:
                     max_val = current.value
-                    selected_items = current.items_included[:] # pass the shallow copy
+                    selected_items = current.items_included[:]  # pass the shallow copy
                     trace.append((elapsed_time, max_val))  # Log this improvement
                     # print("Trace update at {:.2f}s with value {}".format(elapsed_time, max_val))
 
                 continue  # Go to the next item in the priority queue after updating max_value if necessary
-            
+
             # Check if this full-capacity node's solution is better and the capacity is fully utilized
             if current.weight == self.capacity and current.value > max_val:
                 max_val = current.value
-                selected_items = current.items_included[:] # pass the shallow copy
+                selected_items = current.items_included[:]  # pass the shallow copy
                 trace.append((elapsed_time, max_val))  # Log this improvement
                 # print("Trace update at {:.2f}s with value {}".format(elapsed_time, max_val))
 
@@ -178,7 +184,9 @@ class BnB():
             nex_item_idx = current.item_index_sorted + 1
 
             # Node with the next item included
-            include = Node(nex_item_idx, current.value + self.items[nex_item_idx].value, current.weight + self.items[nex_item_idx].weight, 0, current.items_included + [self.items[nex_item_idx].index])
+            include = Node(nex_item_idx, current.value + self.items[nex_item_idx].value,
+                           current.weight + self.items[nex_item_idx].weight, 0,
+                           current.items_included + [self.items[nex_item_idx].index])
             if include.weight <= self.capacity:
                 include.lb = get_bound(include, self.capacity, self.items)
                 # print("Including item Lower bound: {}".format(include.lb))
@@ -204,8 +212,8 @@ class BnB():
         # Note that you should call the bnb method, not the standalone bnb function
         max_value, selected_indices, trace, elapsed_time = self.bnb()
         output_base = os.path.splitext(os.path.basename(self.filename))[0]
-        sol_filename = "{}_{}_{}.sol".format(output_base, self.method, self.cutoff)
-        trace_filename = "{}_{}_{}.trace".format(output_base, self.method, self.cutoff)
+        sol_filename = self.outputFileSol
+        trace_filename = self.outputFileTrace
 
         # Write to solution file
         with open(sol_filename, 'w') as sol_file:
@@ -216,66 +224,3 @@ class BnB():
         with open(trace_filename, 'w') as trace_file:
             for t, val in trace:
                 trace_file.write("{:.2f},{}\n".format(t, int(val)))  # Convert trace values to int
-        
-        # # Calculate total time taken
-        # total_time = time.time() - start_time
-        # print("Method: BnB | File: {filename} | Max Value: {max_value} | Time Spent: {total_time:.2f}s".format(
-        # filename=output_base, max_value=max_value, total_time=total_time))
-        # print("Results written to {sol_filename} and {trace_filename}".format(
-        # sol_filename=sol_filename, trace_filename=trace_filename))
-
-        
-# def print_queue(pq):
-#     print("Current queue:")
-#     for neg_lb, node in pq:
-#         print("Value: {}, Weight: {}, Items: {}, Lower bound: {}".format(node.value, node.weight, node.items_included, -neg_lb))
-#     print()
-
-def indices_to_binary(selected_indices, total_items):
-    binary_list = [0] * total_items
-    for index in selected_indices:
-        binary_list[index] = 1
-    return binary_list
-
-def main():
-    # if len(sys.argv) != 5:
-    #     print("Usage: exec <filename> [BnB|Approx|LS1|LS2] <cutoff in seconds> <random seed>")
-    #     return 1
-
-    # filename = sys.argv[1]
-    # method = sys.argv[2]
-    # cutoff = int(sys.argv[3])
-    # seed = int(sys.argv[4])
-    # random.seed(seed)  # Set the random seed for reproducibility
-
-    # if method == "BnB":
-    #     start_time = time.time()
-    #     max_value, selected_indices, trace, elapsed_time = bnb(filename, cutoff)  # Assuming bnb is defined and imported
-        
-    #     # Output filenames derived from the input filename (without directory path)
-    #     output_base = os.path.splitext(os.path.basename(filename))[0]
-    #     sol_filename = "{}_{}_{}.sol".format(output_base, method, cutoff)
-    #     trace_filename = "{}_{}_{}.trace".format(output_base, method, cutoff)
-        
-    #     # Write to solution file
-    #     with open(sol_filename, 'w') as sol_file:
-    #         sol_file.write("{}\n".format(max_value))
-    #         sol_file.write(",".join(map(str, selected_indices)) + "\n")
-
-    #     # Write to trace file
-    #     with open(trace_filename, 'w') as trace_file:
-    #         for t, val in trace:
-    #             trace_file.write("{:.2f}, {}\n".format(t, val))
-
-        # Calculate total time taken
-        # total_time = time.time() - start_time
-        # print("Method: {method} | File: {filename} | Max Value: {max_value} | Time Spent: {total_time:.2f}s".format(
-        #     method=method, filename=output_base, max_value=max_value, total_time=total_time))
-        # print("Results written to {sol_filename} and {trace_filename}".format(
-        #     sol_filename=sol_filename, trace_filename=trace_filename))
-
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())

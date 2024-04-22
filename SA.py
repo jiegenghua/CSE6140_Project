@@ -21,10 +21,7 @@ class SA():
             randSeed) + '.trace'
         os.makedirs(os.path.dirname(outputFileSol), exist_ok=True)
         os.makedirs(os.path.dirname(outputFileTrace), exist_ok=True)
-        if 'large' in temp[-1]:
-            values, weights = np.split(np.array(Lines[1:-1]), 2, axis=1)
-        else:
-            values, weights = np.split(np.array(Lines[1:]), 2, axis=1)
+        values, weights = np.split(np.array(Lines[1:]), 2, axis=1)
         values = values.flatten()
         weights = weights.flatten()
         self.value = values
@@ -97,13 +94,17 @@ class SA():
         iters = 50
         start = time.time()
         X0 = np.random.binomial(1, 0.1, self.n)
+        while self.cost(X0)[1] > self.W:
+            X0 = np.random.binomial(1, 0.1, self.n)
         sol = self.SA(iters, X0, T, dR)
+
         time_all = time.time()-start
         indices = [str(index) for index, value in enumerate(sol[0]) if value == 1]
         f = open(self.outputFileSol, 'w+')
         f.write(str(sol[1])+'\n')
         f.write(",".join(indices) + "\n")
         f.close()
+        print("Elapsed time:", time_all)
         return time_all
 
 
