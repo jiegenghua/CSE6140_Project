@@ -215,11 +215,15 @@ class BnB():
         sol_filename = os.path.join(self.outputDir, sol_filename)
         trace_filename = "{}_{}_{}.trace".format(output_base, self.method, self.cutoff)
         trace_filename = os.path.join(self.outputDir, trace_filename)
+        
+        # Sort the selected_indices and convert them to 1-indexed format
+        sorted_indices = sorted(selected_indices)
+        incremented_indices = [x + 1 for x in sorted_indices]  # Increment by 1 for 1-indexing
+
         # Write to solution file
         with open(sol_filename, 'w+') as sol_file:
             sol_file.write("{}\n".format(int(max_value)))  # Convert max_value to int
-            sol_file.write(",".join(map(str, selected_indices)) + "\n")
-
+            sol_file.write(",".join(map(str, incremented_indices)) + "\n")
         # Write to trace file
         with open(trace_filename, 'w+') as trace_file:
             for t, val in trace:
