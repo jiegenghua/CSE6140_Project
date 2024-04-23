@@ -1,70 +1,70 @@
 import os
-import numpy as np
 from pathlib import Path
 
-class Item:
-    def __init__(self, value, weight, index):
-        self.value = value
-        self.weight = weight
-        self.index = index
-        self.ratio = float(value) / weight  # Ensure floating-point division
-
 class FPTAS:
-    def __init__(self, inputFile, epsilon):
-        self.epsilon = epsilon
+    def __init__(self, inputFile, cutoff, epsilon=0.1):
         self.inputFile = inputFile
-        self.method = "FPTAS"
-        self.outputDir = Path('output')
-        self.outputDir.mkdir(parents=True, exist_ok=True)
+        self.cutoff = cutoff
+        self.epsilon = epsilon
+        self.outputDir = os.path.join(Path(__file__).resolve().parent, 'output')
+        Path(self.outputDir).mkdir(parents=True, exist_ok=True)
 
-        with open(inputFile, 'r') as file:
+    def fptas_knapsack(self, n, items, max_weight):
+        max_value = max(item['value'] for item in items)
+        K = max_value * self.epsilon / n
+
+        scaled_items = [{'value': int(item['value'] / K), 'weight': int(item['weight'])} for item in items]
+        dp = [[0] * (int(max_weight) + 1) for _ in range(n + 1)]
+
+        for i in range(1, n + 1):
+            for weight in range(int(max_weight) + 1):
+                if scaled_items[i - 1]['weight'] <= weight:
+                    dp[i][weight] = max(dp[i - 1][weight], dp[i - 1][weight - scaled_items[i - 1]['weight']] + scaled_items[i - 1]['value'])
+                else:
+                    dp[i][weight] = dp[i - 1][weight]
+
+        selected_items = []
+        w = int(max_weight)
+        for i in range(n, 0, -1):
+            if dp[i][w] != dp[i - 1][w]:
+                selected_items.append(i - 1)  # Corrected to 0-based index
+                w -= scaled_items[i - 1]['weight']
+
+        approximate_total_value = int(dp[n][max_weight] * K)
+        return approximate_total_value, selected_items
+
+    def parse_and_solve_knapsack(self):
+        with open(self.inputFile, 'r') as file:
             lines = file.readlines()
-            n, W = map(int, lines[0].split())
-            items = [Item(int(line.split()[0]), int(line.split()[1]), i) 
-                     for i, line in enumerate(lines[1:], start=1)]
 
-        self.items = items
-        self.max_weight = W
-        self.n = n
+        n_items, max_weight = map(int, lines[0].strip().split())
+        items = []
 
-    def fptas_knapsack(self):
-        max_value = max(item.value for item in self.items)
-        K = max_value / (self.epsilon * self.n)
+        for line in lines[1:n_items + 1]:
+            value, weight = map(float, line.strip().split())
+            items.append({'value': value, 'weight': weight})
 
-        scaled_items = [Item(int(item.value / K), item.weight, item.index) 
-                        for item in self.items if item.weight <= self.max_weight and item.weight > 0]
+        return self.fptas_knapsack(n_items, items, int(max_weight))
 
-        dp = [0] * (self.max_weight + 1)
-        for item in scaled_items:
-            for weight in range(self.max_weight, item.weight - 1, -1):
-                dp[weight] = max(dp[weight], dp[weight - item.weight] + item.value)
+    def save_solution(self, total_value, selected_items):
+        instance_name = os.path.splitext(os.path.basename(self.inputFile))[0]
+        file_name = f"{instance_name}_FPTAS_{self.cutoff}.sol"
+        file_path = os.path.join(self.outputDir, file_name)
+        with open(file_path, 'w') as file:
+            file.write(f"{total_value}\n")
+            file.write(",".join(map(str, selected_items)))
 
-        approximate_total_value = int(dp[self.max_weight] * K)
-        selected_indices = []
-        weight = self.max_weight
-        for item in reversed(scaled_items):
-            if weight >= item.weight and dp[weight] == dp[weight - item.weight] + item.value:
-                selected_indices.append(item.index)
-                weight -= item.weight
+    def runFPTAS(self):
+        try:
+            total_value, selected_items = self.parse_and_solve_knapsack()
+            self.save_solution(total_value, selected_items)
+        except Exception as e:
+            print(f"Error processing file {self.inputFile}: {str(e)}")
 
-        selected_indices.sort()
-        return approximate_total_value, selected_indices
-
-    def run(self):
-        OPT, X = self.fptas_knapsack()
-        self.write_output_file(X, OPT)
-
-    def write_output_file(self, selected_indices, best_value):
-        output_file_name = f"{Path(self.inputFile).stem}_{self.method}_{int(self.epsilon*1000)}.sol"
-        output_file_path = self.outputDir / output_file_name
-        with open(output_file_path, 'w') as f:
-            f.write(f"{best_value}\n")
-            f.write(",".join(map(str, selected_indices)) + "\n")
-
-# Usage Example
-epsilon = 0.1  # 10% approximation error
-file_paths = [f'small/small_{i}' for i in range(1, 11)]
-
-for file_path in file_paths:
-    fptas = FPTAS(file_path, epsilon)
-    fptas.run()
+# Example usage
+if __name__ == "__main__":
+    epsilon = 0.1  # 10% approximation error
+    file_paths = [os.path.join('small', f'small_{i}') for i in range(1, 11)]
+    for file_path in file_paths:
+        agent = FPTAS(file_path, 1000, epsilon)
+        agent.runFPTAS()
