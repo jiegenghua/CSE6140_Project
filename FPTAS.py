@@ -50,9 +50,15 @@ class FPTAS:
         instance_name = os.path.splitext(os.path.basename(self.inputFile))[0]
         file_name = f"{instance_name}_FPTAS_{self.cutoff}.sol"
         file_path = os.path.join(self.outputDir, file_name)
+
+        # Sort the selected_items and convert them to 1-indexed format
+        sorted_indices = sorted(selected_items)
+        incremented_indices = [x + 1 for x in sorted_indices]  # Increment by 1 for 1-indexing
+
         with open(file_path, 'w') as file:
             file.write(f"{total_value}\n")
-            file.write(",".join(map(str, selected_items)))
+            file.write(",".join(map(str, incremented_indices)) + "\n")
+
 
     def runFPTAS(self):
         try:
