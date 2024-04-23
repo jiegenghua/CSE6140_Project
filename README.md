@@ -27,7 +27,7 @@ python main_KSP.py -inst filename -alg "[BnB|FPTAS|HC|SA]" -time "cutoff time" -
 ```
 For example, you can run the small-1 instance by the following command in windows:
 ```angular2html
-Python main_KSP.py -inst .\\DATA\\DATASET\\small_scale\\small_1 -alg HC -time 5 -seed 1
+python main_KSP.py -inst .\\DATA\\DATASET\\small_scale\\small_1 -alg HC -time 5 -seed 1
 ```
 <ins>Note that our output are all **1-indexed**</ins>. The results (solution files and trace files) are saved in the folder "output" named by the name of the instances.
 
