@@ -80,7 +80,7 @@ class SA():
                     avgCostList.append(bestCost)
                     tt = time.time()-start
                     if tt > self.cutoff:
-                        return  bestX, bestCost
+                        return bestX, bestCost
                     f2.write(str(tt)+','+str(int(bestCost))+'\n')
                 i += 1
                 cal += 1
@@ -102,7 +102,7 @@ class SA():
         sol = self.SA(iters, X0, T, dR)
 
         time_all = time.time()-start
-        indices = [str(index) for index, value in enumerate(sol[0]) if value == 1]
+        indices = [str(index) for index, value in enumerate(sol[0], start=1) if value == 1]
 
         f = open(self.outputFileSol, 'w+')
         f.write(str(int(sol[1]))+'\n')
