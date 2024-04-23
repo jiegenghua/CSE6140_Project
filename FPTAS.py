@@ -1,101 +1,65 @@
 import os
-import time
-import numpy as np
-from pathlib import Path
 
-# Class for each item
-class Item:
-    def __init__(self, value, weight, index):
-        self.value = value
-        self.weight = weight
-        self.index = index
-        self.ratio = float(value) / weight  # Ensure floating-point division
+def fptas_knapsack(items, max_weight, epsilon):
+    max_value = max(item['value'] for item in items)
+    n = len(items)
+    K = max_value * epsilon / n
 
-class FPTAS:
-    def __init__(self, inputFile, cutoff):
-        self.inputFile = inputFile
-        self.cutoff = cutoff
-        self.outputDir = os.path.join(Path(__file__).resolve().parent, 'output')
-        Path(self.outputDir).mkdir(parents=True, exist_ok=True)
-        output_base = os.path.splitext(os.path.basename(inputFile))[0]
-        self.outputFileSol = os.path.join(self.outputDir, f"{output_base}_FPTAS_{cutoff}.sol")
-        self.outputFileTrace = os.path.join(self.outputDir, f"{output_base}_FPTAS_{cutoff}.trace")
+    scaled_items = [{'value': int(item['value'] / K), 'weight': item['weight']} for item in items]
 
-        with open(inputFile, 'r') as file:
-            lines = file.readlines()
-            n, W = map(int, lines[0].strip().split())
-            items = []
-            for index, line in enumerate(lines[1:n+1], start=0):
-                try:
-                    value, weight = map(float, line.strip().split())
-                    items.append(Item(value, weight, index))
-                except ValueError as e:
-                    print(f"Skipping line in {inputFile} due to error: {e}")
-                    continue
-            self.items = items
-            self.W = W
+    dp = [[0] * (max_weight + 1) for _ in range(n + 1)]
 
-    def fptas_knapsack(self, epsilon):
-        start_time = time.time()
-        valid_items = [item for item in self.items if item.weight > 0 and item.weight <= self.W]
-        if not valid_items:
-            return 0, []
+    for i in range(1, n + 1):
+        for weight in range(max_weight + 1):
+            if scaled_items[i - 1]['weight'] <= weight:
+                dp[i][weight] = max(dp[i - 1][weight], dp[i - 1][weight - scaled_items[i - 1]['weight']] + scaled_items[i - 1]['value'])
+            else:
+                dp[i][weight] = dp[i - 1][weight]
 
-        max_value = max(item.value for item in valid_items)
-        n = len(valid_items)
-        K = max_value * epsilon / n
+    selected_items = []
+    w = max_weight
+    for i in range(n, 0, -1):
+        if dp[i][w] != dp[i - 1][w]:
+            selected_items.append(i) 
+            w -= items[i - 1]['weight']
 
-        scaled_items = [Item(int(item.value / K), item.weight, item.index) for item in valid_items]
-        dp = [0] * (self.W + 1)
+    approximate_total_value = int(dp[n][max_weight] * K)
+    return approximate_total_value, selected_items
 
-        for item in scaled_items:
-            for weight in range(self.W, item.weight - 1, -1):
-                dp[weight] = max(dp[weight], dp[weight - item.weight] + item.value)
+def parse_and_solve_knapsack(filepath, epsilon):
+    with open(filepath, 'r') as file:
+        lines = file.readlines()
 
-        approximate_total_value = int(dp[self.W] * K)
-        end_time = time.time()
+    n_items, max_weight = map(int, lines[0].strip().split())
+    items = []
 
-        # Reconstruct the solution (optional)
-        # ... (This section would reconstruct which items are included in the solution)
+    for line in lines[1:n_items+1]:
+        value, weight = map(int, line.strip().split())
+        items.append({'value': value, 'weight': weight})
 
-        return approximate_total_value, end_time - start_time
+    total_value, selected_items = fptas_knapsack(items, max_weight, epsilon)
+    return total_value, selected_items
 
-    def run(self, epsilon):
-        approx_value, exec_time = self.fptas_knapsack(epsilon)
-        with open(self.outputFileSol, 'w+') as f:
-            f.write(f"{approx_value}\n")
-        print(f"Processed {self.inputFile}: Approx Value = {approx_value}, Time = {exec_time}s")
+def save_solution(instance_name, method, cutoff, total_value, selected_items):
+    file_name = f"{instance_name}_{method}_{cutoff}.sol"
+    with open(file_name, 'w') as file:
+        file.write(f"{total_value}\n")
+        file.write(",".join(map(str, selected_items)))
 
-def main():
-    epsilon = 0.1
-    file_paths = [os.path.join('data', f'data_{i}.txt') for i in range(1, 11)]
-    results = []
-
+def main(file_paths, epsilon):
+    method = "approx"
+    cutoff = int(epsilon * 1000) 
+    
     for file_path in file_paths:
-        if not os.path.exists(file_path):
-            print(f"Data file missing: {file_path}")
-            continue
+        instance_name = os.path.basename(file_path)
+        try:
+            total_value, selected_items = parse_and_solve_knapsack(file_path, epsilon)
+            save_solution(instance_name, method, cutoff, total_value, selected_items)
+        except Exception as e:
+            print(f"Error processing file {file_path}: {str(e)}")
 
-        solver = FPTAS(file_path, epsilon)
-        solver.run(epsilon)
-        # Assume solution file exists and contains the correct total value for comparison
-        solution_file_path = os.path.join('solutions', os.path.basename(file_path).replace('.txt', '.sol'))
-
-        if os.path.exists(solution_file_path):
-            with open(solution_file_path, 'r') as sol_file:
-                official_total_value = int(sol_file.read().strip())
-            with open(solver.outputFileSol, 'r') as sol_file:
-                approx_total_value = int(sol_file.read().strip())
-            approximation_ratio = approx_total_value / official_total_value if official_total_value != 0 else float('inf')
-            results.append({
-                'File': file_path,
-                'Approximate Total Value': approx_total_value,
-                'Official Total Value': official_total_value,
-                'Approximation Ratio': approximation_ratio
-            })
-
-    for result in results:
-        print(result)
-
-if __name__ == '__main__':
-    main()
+epsilon = 0.1  # 10% approximation error
+file_paths = [
+    os.path.join('small', f'small_{i}') for i in range(1, 11)
+]
+main(file_paths, epsilon)
