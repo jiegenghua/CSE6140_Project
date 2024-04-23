@@ -17,7 +17,7 @@ performance improved; the solution file which includes two lines (the optimal qu
   - HC.py: the hill climbing algorithm \
   - SA.py: the simulated annealing algorithm \
   - FPTAS.py: approximate algorithm based on dynamic programming \
-  - main_KSP.py: the main function
+  - **main_KSP.py**: <ins>the main function</ins>
 
 
 ## To run the code:
