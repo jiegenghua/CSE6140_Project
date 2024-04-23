@@ -79,6 +79,8 @@ class SA():
                     bestCost = currCost
                     avgCostList.append(bestCost)
                     tt = time.time()-start
+                    if tt > self.cutoff:
+                        return  bestX, bestCost
                     f2.write(str(tt)+','+str(int(bestCost))+'\n')
                 i += 1
                 cal += 1
@@ -90,7 +92,7 @@ class SA():
         random.seed(self.seed)
         dR = 0.95
         T = 1000   # temperature
-        iters = 50   # iteration number for each temperature
+        iters = 200   # iteration number for each temperature
         start = time.time()
         alpha = 0.1  # decay rate for generating random initial state
         X0 = np.random.binomial(1, alpha, self.n)
