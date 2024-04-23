@@ -13,19 +13,11 @@ performance improved; the solution file which includes two lines (the optimal qu
 
 
 ## Algorithms
-BnB.py: the branch and bound algorithm \
-HC.py: the hill climbing algorithm \
-SA.py: the simulated annealing algorithm \
-FPTAS.py: approximate algorithm based on dynamic programming \
-main_KSP.py: the main function
-
-## Package required
-* python 3
-* numpy
-* pathlib
-* matplotlib
-* os
-* argparse
+  - BnB.py: the branch and bound algorithm \
+  - HC.py: the hill climbing algorithm \
+  - SA.py: the simulated annealing algorithm \
+  - FPTAS.py: approximate algorithm based on dynamic programming \
+  - **main_KSP.py**: <ins>the main function</ins>
 
 
 ## To run the code:
@@ -37,7 +29,16 @@ For example, you can run the small-1 instance by the following command in window
 ```angular2html
 Python main_KSP.py -inst .\\DATA\\DATASET\\small_scale\\small_1 -alg HC -time 5 -seed 1
 ```
-The results (solution files and trace files) are saved in the folder "output" named by the name of the instances.
+<ins>Note that our output are all **1-indexed**</ins>. The results (solution files and trace files) are saved in the folder "output" named by the name of the instances.
+
+## Package required
+* python 3
+* numpy
+* pathlib
+* matplotlib
+* os
+* argparse
+  
 
 ## Plot
 To plot the boxplot, QRTD plot and SQD plot for the large-scale 1 and large-scale 3 instances with 
