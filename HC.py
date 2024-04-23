@@ -88,7 +88,7 @@ class HC():
     def write_output_file(self, bestX, bestValue):
         with open(self.outputFileSol, 'w+') as f:
             f.write(f"{int(bestValue)}\n")  # the best value as an integer
-            indices = [str(index) for index, value in enumerate(bestX) if value == 1]
+            indices = [str(index) for index, value in enumerate(bestX, start=1) if value == 1]
             f.write(",".join(indices) + "\n")  # the indices of selected items
 
 
