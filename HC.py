@@ -58,6 +58,8 @@ class HC():
                 bestX = newX[:]
                 bestValue = newValue
                 trace_time = time.time() - start
+                if trace_time>self.cutoff:
+                    break
                 trace_data.append((trace_time, bestValue))
 
         self.write_trace_file(trace_data, self.outputFileTrace)
@@ -73,10 +75,12 @@ class HC():
         start = time.time()
         random.seed(self.seed)
         results = []
-        X0 = np.random.binomial(1, 0.1, self.n)
+        a = 0.1
+        X0 = np.random.binomial(1, a, self.n)
         # check the initial state exceeds the W
         while np.dot(X0, self.weight) > self.W:
-            X0 = np.random.binomial(1, 0.1, self.n)
+            a = a*0.1
+            X0 = np.random.binomial(1, a, self.n)
         bestX, bestValueWeight = self.hill_climbing(X0, iters)
         results.append(bestValueWeight[0])
         self.write_output_file(bestX, max(results))
