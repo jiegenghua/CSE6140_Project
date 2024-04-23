@@ -2,7 +2,8 @@ import os
 import time
 import numpy as np
 from pathlib import Path
-#  Class for each item
+
+# Class for each item
 class Item:
     def __init__(self, value, weight, index):
         self.value = value
@@ -10,83 +11,91 @@ class Item:
         self.index = index
         self.ratio = float(value) / weight  # Ensure floating-point division
 
-class FPTAS():
+class FPTAS:
     def __init__(self, inputFile, cutoff):
-        file = open(inputFile, 'r')
-        Lines = file.readlines()
-        Lines = [list(map(float, line.split())) for line in Lines]
-        n = int(Lines[0][0])
-        W = Lines[0][1]
-        values, weights = np.split(np.array(Lines[1:]), 2, axis=1)
-        values = values.flatten()
-        weights = weights.flatten()
-        self.value = values
-        self.weight = weights
+        self.inputFile = inputFile
         self.cutoff = cutoff
-        self.W = W
-        self.n = n
-        self.method = "FPTAS"
-        self.outputDir = os.path.join(Path(__file__).resolve().parent,'output')
+        self.outputDir = os.path.join(Path(__file__).resolve().parent, 'output')
         Path(self.outputDir).mkdir(parents=True, exist_ok=True)
         output_base = os.path.splitext(os.path.basename(inputFile))[0]
-        sol_filename = "{}_{}_{}.sol".format(output_base, self.method, self.cutoff)
-        self.outputFileSol = os.path.join(self.outputDir, sol_filename)
-        trace_filename = "{}_{}_{}.trace".format(output_base, self.method, self.cutoff)
-        self.outputFileTrace = os.path.join(self.outputDir, trace_filename)
+        self.outputFileSol = os.path.join(self.outputDir, f"{output_base}_FPTAS_{cutoff}.sol")
+        self.outputFileTrace = os.path.join(self.outputDir, f"{output_base}_FPTAS_{cutoff}.trace")
 
-    def fptas_knapsack(self, items, max_weight, epsilon):
-        if epsilon <= 0:
-            raise ValueError("Epsilon must be greater than zero.")
+        with open(inputFile, 'r') as file:
+            lines = file.readlines()
+            n, W = map(int, lines[0].strip().split())
+            items = []
+            for index, line in enumerate(lines[1:n+1], start=0):
+                try:
+                    value, weight = map(float, line.strip().split())
+                    items.append(Item(value, weight, index))
+                except ValueError as e:
+                    print(f"Skipping line in {inputFile} due to error: {e}")
+                    continue
+            self.items = items
+            self.W = W
 
-        # Filter out items with non-positive weights or weights exceeding the capacity before processing
-        valid_items = [item for item in items if item.weight > 0 and item.weight <= max_weight]
+    def fptas_knapsack(self, epsilon):
+        start_time = time.time()
+        valid_items = [item for item in self.items if item.weight > 0 and item.weight <= self.W]
         if not valid_items:
             return 0, []
 
         max_value = max(item.value for item in valid_items)
         n = len(valid_items)
-        K = max_value / (epsilon * n) if n > 0 else 1  # Avoid division by zero
+        K = max_value * epsilon / n
 
-        # Scale down the values of the items and ensure no weight becomes zero after scaling
-        scaled_items = [Item(int(item.value / K), max(1, int(item.weight)), item.index) for item in valid_items]
+        scaled_items = [Item(int(item.value / K), item.weight, item.index) for item in valid_items]
+        dp = [0] * (self.W + 1)
 
-        # Initialize the dynamic programming table
-        dp = [0] * (max_weight + 1)
-
-        # Dynamic programming to find the best value with scaled values
         for item in scaled_items:
-            item_weight = max(1, int(item.weight))  # Ensure weight is at least 1
-            for weight in range(max_weight, item_weight - 1, -1):
-                dp[weight] = max(dp[weight], dp[weight - item_weight] + item.value)
+            for weight in range(self.W, item.weight - 1, -1):
+                dp[weight] = max(dp[weight], dp[weight - item.weight] + item.value)
 
-        # Calculate the approximate total value
-        approximate_total_value = int(dp[max_weight] * K)
+        approximate_total_value = int(dp[self.W] * K)
+        end_time = time.time()
 
-        # Reconstruct the solution to find which items are included
-        selected_indices = []
-        weight = max_weight
-        for i in reversed(range(len(scaled_items))):
-            item = scaled_items[i]
-            if weight >= item.weight and dp[weight] == dp[weight - item.weight] + item.value:
-                selected_indices.append(item.index)
-                weight -= item.weight
+        # Reconstruct the solution (optional)
+        # ... (This section would reconstruct which items are included in the solution)
 
-        selected_indices.reverse()
-        return approximate_total_value, selected_indices
+        return approximate_total_value, end_time - start_time
 
-    def runFPTAS(self):
-        epsilon = 0.1
-        items = []
-        for index in range(self.n):
-            items.append(Item(self.value[index], self.weight[index], index))
-        items.sort(key=lambda item: item.ratio, reverse=True)
-
-        max_weight = int(self.W)
-        OPT, X = self.fptas_knapsack(items, max_weight, epsilon)
-        self.write_output_file(X, OPT)
-
-    def write_output_file(self, bestX, bestValue):
-        indices = [str(index) for index in bestX]
+    def run(self, epsilon):
+        approx_value, exec_time = self.fptas_knapsack(epsilon)
         with open(self.outputFileSol, 'w+') as f:
-            f.write(f"{int(bestValue)}\n")
-            f.write(",".join(indices) + "\n")
+            f.write(f"{approx_value}\n")
+        print(f"Processed {self.inputFile}: Approx Value = {approx_value}, Time = {exec_time}s")
+
+def main():
+    epsilon = 0.1
+    file_paths = [os.path.join('data', f'data_{i}.txt') for i in range(1, 11)]
+    results = []
+
+    for file_path in file_paths:
+        if not os.path.exists(file_path):
+            print(f"Data file missing: {file_path}")
+            continue
+
+        solver = FPTAS(file_path, epsilon)
+        solver.run(epsilon)
+        # Assume solution file exists and contains the correct total value for comparison
+        solution_file_path = os.path.join('solutions', os.path.basename(file_path).replace('.txt', '.sol'))
+
+        if os.path.exists(solution_file_path):
+            with open(solution_file_path, 'r') as sol_file:
+                official_total_value = int(sol_file.read().strip())
+            with open(solver.outputFileSol, 'r') as sol_file:
+                approx_total_value = int(sol_file.read().strip())
+            approximation_ratio = approx_total_value / official_total_value if official_total_value != 0 else float('inf')
+            results.append({
+                'File': file_path,
+                'Approximate Total Value': approx_total_value,
+                'Official Total Value': official_total_value,
+                'Approximation Ratio': approximation_ratio
+            })
+
+    for result in results:
+        print(result)
+
+if __name__ == '__main__':
+    main()
